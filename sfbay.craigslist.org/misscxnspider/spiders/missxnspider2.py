@@ -11,8 +11,10 @@ import os
 
 class Missxnspider2Spider(scrapy.Spider):
     name = 'missxnspider2'
-    allowed_domains = ["sfbay.craigslist.org"]
+    allowed_domains = ['sfbay.craigslist.org']
     start_urls = ['https://sfbay.craigslist.org/search/mis']
+
+    #Custom shits
     searchURL = 'https://sfbay.craigslist.org/search/mis'
     baseURL = 'https://sfbay.craigslist.org'
     # dataDir = './pages'
