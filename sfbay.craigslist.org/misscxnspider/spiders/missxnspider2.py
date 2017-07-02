@@ -14,7 +14,7 @@ class Missxnspider2Spider(scrapy.Spider):
     allowed_domains = ["sfbay.craigslist.org"]
     start_urls = ['https://sfbay.craigslist.org/search/mis']
     searchURL = 'https://sfbay.craigslist.org/search/mis'
-    baseURL = 'https://sfbay.craigslist.org/'
+    baseURL = 'https://sfbay.craigslist.org'
     # dataDir = './pages'
     # totalPages = 0
     # currentPage = 0
@@ -24,21 +24,38 @@ class Missxnspider2Spider(scrapy.Spider):
         logging.info('Missxnspider2Spider start_requests begin')
         yield scrapy.Request(url=self.searchURL, callback=self.searchPageScrape)
 
-
     def searchPageScrape(self, response):
-        firstPage = response
-        self.saveToFile(firstPage)
+        #Scrape pages under sub domain /search/category=##
+        searchPage = response
+        self.saveToFile(searchPage)
+        soup = BeautifulSoup(searchPage.body, 'html.parser')
 
-        soup = BeautifulSoup(firstPage.body, 'html.parser')
+        #Extract total browsable posts for category
+        rangeToSpan = soup.find('span', class_='rangeTo')
+        rangeTo = int(rangeToSpan.get_text())
+
+        totalCountSpan = soup.find('span', class_='totalcount')
+        totalCount = int(totalCountSpan.get_text())
+
+        logging.info('Scraping search page for results ' + str(rangeTo) + ' of ' + str(totalCount))
+
+        # Extract the links for the posts
         postLinks = soup.find_all('a', class_='result-title hdrlnk')
-
         if len(postLinks) > 0:
-            logging.info('Number of posts on page:' + str(len(postLinks)))
+            logging.info('Number of posts on page:' + str(len(postLinks))) #edit to create terminal indicator for how many pages left
 
-        for postLink in postLinks:
+        for postLink in postLinks: #loop through all the links for posts
             link = str(postLink['href'])
             if link != response.url:
                 yield scrapy.Request(url = self.baseURL + link, callback = self.savePosts)
+
+        if rangeTo < totalCount:
+            logging.info('grabbing next page')
+            nextAnchor = soup.find('a', class_='button next')
+            nextLink = str(nextAnchor['href'])
+            if nextLink != response.url:
+                yield scrapy.Request(url = self.baseURL + nextLink, callback = self.searchPageScrape)
+
 
     def savePosts(self, response):
         post = response
