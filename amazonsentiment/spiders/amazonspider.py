@@ -9,12 +9,19 @@ import logging
 import csv
 import os
 import re
+import html
+
+class review(object):
+    def __init__(self, text, rating):
+        self.text = text
+        self.rating = rating
+
 
 class AmazonspiderSpider(scrapy.Spider):
     name = "amazonspider"
     allowed_domains = ["amazon.com"]
     start_urls = ['https://www.amazon.com/product-reviews/B0714QRG4Z/']
-    textList = []
+    reviewList = []
 
     def start_requests(self):
         logging.info('amazon spider start_requests begin')
@@ -24,6 +31,14 @@ class AmazonspiderSpider(scrapy.Spider):
         logging.info('start scrape page')
         soup = BeautifulSoup(page.body, 'html.parser')
         logging.info('retrieved page: ' + soup.head.title.get_text())
+        reviewDivs = soup.find_all('div', class_='a-section review')
+        spanList = soup.find_all('span', class_='a-size-base review-text')
+        for span in spanList:
+            rawtext = span.get_text()
+            cleantext = rawtext.replace("\\","")
+            self.
+            self.reviewList.append(cleantext)
+        logging.info('Review: '+ str(self.reviewList))
 
     def closed(self, response):
         self.sentimentAnalysis(self.textList)
