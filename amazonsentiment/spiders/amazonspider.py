@@ -11,15 +11,18 @@ import os
 import re
 import html
 
-class review(object):
+class Review(object):
     def __init__(self, text, rating):
         self.text = text
         self.rating = rating
 
+    def storeSentiment(self, sentiment):
+        self.sentiment = sentiment
+
 class AmazonspiderSpider(scrapy.Spider):
     name = "amazonspider"
     allowed_domains = ["amazon.com"]
-    start_urls = ['https://www.amazon.com/product-reviews/B0714QRG4Z/']
+    start_urls = ['https://www.amazon.com/product-reviews/B0714QRG4Z/ref=cm_cr_getr_d_show_all?pageNumber=1&reviewerType=all_reviews']
     reviewList = []
 
     def start_requests(self):
@@ -32,23 +35,47 @@ class AmazonspiderSpider(scrapy.Spider):
         logging.info('retrieved page: ' + soup.head.title.get_text())
         reviewDivs = soup.find_all('div', class_='a-section review')
         for reviewDiv in reviewDivs:
-            reviewSpan = soup.find('span', class_='a-size-base review-text')
+            reviewSpan = reviewDiv.find('span', class_='a-size-base review-text')
             rawtext = reviewSpan.get_text()
             # cleantext = rawtext.replace("\\","")
-            reviewHook = soup.find('i', attr={'data-hook':'review-star-rating'})
+            reviewHook = reviewDiv.find('i', attrs={'data-hook':'review-star-rating'})
             ratingText = reviewHook.span.get_text()
-            rating = float(ratingText.replace(' out of 5 stars', ''))
-
-
-
-        for span in spanList:
-            rawtext = span.get_text()
-            cleantext = rawtext.replace("\\","")
-            self.reviewList.append(cleantext)
-        logging.info('Review: '+ str(self.reviewList))
+            rawRating = float(ratingText.replace(' out of 5 stars', ''))
+            rating = (((rawRating - 1) / 4) * 2) - 1
+            review = Review(rawtext, rating)
+            # logging.info('rating ' + str(review.rating) + ' review:' + review.text)
+            self.reviewList.append(review)
+        nextPageLink = soup.find('li', class_='a-last')
+        if nextPageLink is not None:
+            if nextPageLink.a is not None:
+                link = nextPageLink.a['href']
+                yield scrapy.Request(url="https://www.amazon.com" + str(link), callback=self.scrapePage)
 
     def closed(self, response):
-        self.sentimentAnalysis(self.textList)
+        self.sentimentAnalysis(self.reviewList)
 
-    def sentimentAnalysis(self, textList):
+    def sentimentAnalysis(self, reviewList):
         logging.info('begin sentimentAnalysis')
+        sid = SentimentIntensityAnalyzer()
+        for review in reviewList:
+            scoreList = []
+            sentences = tokenize.sent_tokenize(review.text)
+            # logging.info('Scoring sentences')
+            for sentence in sentences:
+                if len(sentence) > 1:
+                    scoring = sid.polarity_scores(sentence)
+                    # logging.info(scoring)
+                    if review.rating < 0:
+                        score = float(scoring["neg"]) * -1.0
+                    elif review.rating > 0:
+                        score = float(scoring["pos"])
+                    else:
+                        score = float(scoring["compound"])
+                    scoreList.append(score)
+            averageSentiment = sum(scoreList) / len(scoreList)
+            review.storeSentiment(averageSentiment)
+            logging.info('rating: ' + str(review.rating) + ' average sentiment ' + str(review.sentiment))
+            if review.rating < 0:
+                logging.info('Review rating: ' + str(review.rating) + ' sentiment: ' + str(averageSentiment))
+                logging.info(review.text)
+                    # logging.info('sentence score: ' + str(compound) + " " + str(sentence))
