@@ -1,11 +1,32 @@
 # -*- coding: utf-8 -*-
 import scrapy
-
+from bs4 import BeautifulSoup
+from scrapy.crawler import CrawlerProcess
+from scrapy.utils.project import get_project_settings
+from nltk.sentiment.vader import SentimentIntensityAnalyzer
+from nltk import tokenize
+import logging
+import csv
+import os
+import re
 
 class AmazonspiderSpider(scrapy.Spider):
     name = "amazonspider"
     allowed_domains = ["amazon.com"]
-    start_urls = ['http://amazon.com/']
+    start_urls = ['https://www.amazon.com/product-reviews/B0714QRG4Z/']
+    textList = []
 
-    def parse(self, response):
-        pass
+    def start_requests(self):
+        logging.info('amazon spider start_requests begin')
+        yield scrapy.Request(url=self.start_urls[0], callback=self.scrapePage)
+
+    def scrapePage(self, page):
+        logging.info('start scrape page')
+        soup = BeautifulSoup(page.body, 'html.parser')
+        logging.info('retrieved page: ' + soup.head.title.get_text())
+
+    def closed(self, response):
+        self.sentimentAnalysis(self.textList)
+
+    def sentimentAnalysis(self, textList):
+        logging.info('begin sentimentAnalysis')
