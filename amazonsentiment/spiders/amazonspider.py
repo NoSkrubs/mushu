@@ -16,7 +16,6 @@ class review(object):
         self.text = text
         self.rating = rating
 
-
 class AmazonspiderSpider(scrapy.Spider):
     name = "amazonspider"
     allowed_domains = ["amazon.com"]
@@ -32,11 +31,19 @@ class AmazonspiderSpider(scrapy.Spider):
         soup = BeautifulSoup(page.body, 'html.parser')
         logging.info('retrieved page: ' + soup.head.title.get_text())
         reviewDivs = soup.find_all('div', class_='a-section review')
-        spanList = soup.find_all('span', class_='a-size-base review-text')
+        for reviewDiv in reviewDivs:
+            reviewSpan = soup.find('span', class_='a-size-base review-text')
+            rawtext = reviewSpan.get_text()
+            # cleantext = rawtext.replace("\\","")
+            reviewHook = soup.find('i', attr={'data-hook':'review-star-rating'})
+            ratingText = reviewHook.span.get_text()
+            rating = float(ratingText.replace(' out of 5 stars', ''))
+
+
+
         for span in spanList:
             rawtext = span.get_text()
             cleantext = rawtext.replace("\\","")
-            self.
             self.reviewList.append(cleantext)
         logging.info('Review: '+ str(self.reviewList))
 
