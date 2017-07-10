@@ -40,13 +40,6 @@ class AmazonspiderSpider(scrapy.Spider):
             rating = float(ratingText.replace(' out of 5 stars', ''))
 
 
-
-        for span in spanList:
-            rawtext = span.get_text()
-            cleantext = rawtext.replace("\\","")
-            self.reviewList.append(cleantext)
-        logging.info('Review: '+ str(self.reviewList))
-
     def closed(self, response):
         self.sentimentAnalysis(self.textList)
 
