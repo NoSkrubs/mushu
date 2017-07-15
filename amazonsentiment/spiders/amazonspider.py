@@ -14,15 +14,17 @@ import html
 
 
 class Review(object):
-    def __init__(self, text, rating, pageTitle, url):
+    def __init__(self, text, rating, title, pageTitle, pageURL):
         self.text = text
         self.rating = rating
         self.pageTitle = pageTitle
-        self.pageURL = url
+        self.pageURL = pageURL
+        self.title = title
 
-    def storeSentiment(self, vader, textblob):
+    def storeSentiment(self, vader, textblob, titleScore):
         self.vader = vader
         self.textblob = textblob
+        self.titleScore = titleScore
 
 class AmazonspiderSpider(scrapy.Spider):
     name = "amazonspider"
@@ -38,7 +40,7 @@ class AmazonspiderSpider(scrapy.Spider):
         logging.info('start scrape page')
         soup = BeautifulSoup(page.body, 'html.parser')
         pageTitle = soup.head.title.get_text()
-        pageURL = soup.url
+        pageURL = page.url
         logging.info('retrieved page: ' + pageTitle)
         reviewDivs = soup.find_all('div', class_='a-section review')
         for reviewDiv in reviewDivs:
@@ -49,7 +51,12 @@ class AmazonspiderSpider(scrapy.Spider):
             ratingText = reviewHook.span.get_text()
             rawRating = float(ratingText.replace(' out of 5 stars', ''))
             rating = (((rawRating - 1) / 4) * 2) - 1
-            review = Review(rawtext, rating, pageTitle, pageURL)
+
+            reviewTitleHook = reviewDiv.find('a', attrs={'data-hook':'review-title'})
+            reviewTitle = reviewTitleHook.get_text()
+            logging.info('Review title scraped: ' + str(reviewTitle))
+
+            review = Review(rawtext, rating, reviewTitle, pageTitle, pageURL)
             # logging.info('rating ' + str(review.rating) + ' review:' + review.text)
             self.reviewList.append(review)
         nextPageLink = soup.find('li', class_='a-last')
@@ -65,11 +72,16 @@ class AmazonspiderSpider(scrapy.Spider):
     def sentimentAnalysis(self, reviewList):
         logging.info('begin sentimentAnalysis')
         sid = SentimentIntensityAnalyzer()
+
+        #loop through reviews
         for review in reviewList:
             vaderScoreList = []
             textblobScoreList = []
+            titleScoreList = []
             sentences = tokenize.sent_tokenize(review.text)
             # logging.info('Scoring sentences')
+
+            #Sentiment of review text using VADER and Naive Bayesian
             for sentence in sentences:
                 if len(sentence) > 1:
                     vaderScoring = sid.polarity_scores(sentence)
@@ -85,8 +97,27 @@ class AmazonspiderSpider(scrapy.Spider):
                     textblobScoreList.append(textblobScore)
             averageVader = sum(vaderScoreList) / len(vaderScoreList)
             averageTextblob = sum(textblobScoreList) / len(textblobScoreList)
-            review.storeSentiment(averageVader, averageTextblob)
-            logging.info('review: ' + review.text[:15] + ' rating: ' + str(review.rating) + ' vader: ' + str(review.vader)[:4] + ' textblob: ' + str(review.textblob)[:4] + str(review.pageURL))
+
+            #Snetiment of title using VADER
+            titleSentences = tokenize.sent_tokenize(review.title)
+            for titleSentence in titleSentences:
+                if len(titleSentence) > 1:
+                    titleVaderScoring = sid.polarity_scores(titleSentence)
+                    titleVaderScore = float(titleVaderScoring["compound"])
+                    titleScoreList.append(titleVaderScore)
+            if len(titleScoreList) > 0:
+                titleVader = sum(titleScoreList) / len(titleScoreList)
+            else:
+                titleVader = 'n/a'
+            #Store sentiment into review object and print result
+            review.storeSentiment(averageVader, averageTextblob, titleVader)
+            logging.info('review: ' + review.text[:15] +
+                ' rating: ' + str(review.rating) +
+                ' titleScore: ' + str(review.titleScore)[:4] +
+                ' vader: ' + str(review.vader)[:4] +
+                ' textblob: ' + str(review.textblob)[:4] +
+                ' url: ' + str(review.pageURL)
+            )
             # if review.rating < 0:
             #     logging.info('Review rating: ' + str(review.rating) + ' sentiment: ' + str(averageSentiment))
             #     logging.info(review.text)
