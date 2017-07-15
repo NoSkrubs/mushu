@@ -48,7 +48,7 @@ class Listing(object):
 class SfbayrentSpider(scrapy.Spider):
     name = "sfbayrent"
     allowed_domains = ["sfbay.craigslist.org"]
-    start_urls = ['https://sfbay.craigslist.org/search/sfc/apa?availabilityMode=0']
+    start_urls = ['https://sfbay.craigslist.org/search/sfc/apa?min_price=3000&max_price=4700&min_bedrooms=3&min_bathrooms=2&availabilityMode=0']
     listings = []
     baseURL = 'https://sfbay.craigslist.org'
 
@@ -79,8 +79,9 @@ class SfbayrentSpider(scrapy.Spider):
 
         for result in resultRows:
             listing = Listing(result, self.baseURL)
-            self.listings.append(listing)
-            logging.info(str(listing.price) + ' hood: ' + str(listing.hood) + ' title: ' + listing.title)
+            if listing not in self.listings:
+                self.listings.append(listing)
+                logging.info(str(listing.price) + ' hood: ' + str(listing.hood) + ' title: ' + listing.title)
 
         if rangeTo < totalCount:
             logging.info('grabbing next page')
@@ -88,6 +89,22 @@ class SfbayrentSpider(scrapy.Spider):
             nextLink = str(nextAnchor['href'])
             if nextLink != page.url:
                 yield scrapy.Request(url = self.baseURL + nextLink, callback = self.scrapePage)
+
+    def closed(self, response):
+        logging.info('closed spider')
+        hoods = []
+        for listing in self.listings:
+            if listing.hood is not None and listing.hood not in hoods:
+                hoods.append(listing.hood)
+        for hood in hoods:
+            prices = []
+            for listing in self.listings:
+                if listing.hood == hood and listing.price is not None:
+                    prices.append(listing.price)
+            # logging.info(str(hood) + ' ' + str(prices))
+            average = sum(prices) / len(prices)
+            logging.info(str(len(prices)) + ' listings in: ' + str(hood) + ' average price: ' + str(average))
+
 
 
 
