@@ -1,8 +1,6 @@
 import React, { Component } from 'react';
 import logo from './logo.svg';
-import { Link, IndexLink } from 'react-router'
-
-
+import { Link, IndexLink } from 'react-router-dom'
 
 //CSS
 import './App.css';

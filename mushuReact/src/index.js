@@ -1,7 +1,7 @@
 //Components
 import React, { Component } from 'react';
 import ReactDOM from 'react-dom';
-import { Router, Route, browserHistory, IndexRoute } from 'react-router';
+import { BrowserRouter, Route, Link } from 'react-router-dom';
 import registerServiceWorker from './registerServiceWorker';
 
 //Modules
@@ -12,11 +12,13 @@ import About from './About';
 import './index.css';
 
 ReactDOM.render(
-  <Router history={hashHistory}>
-    <Route path="/" component={App}/>
-    <Route path="/about" component={About}/>
-  </Router>
- , document.getElementById('root')
+  <BrowserRouter>
+    <div>
+      <Route exact path="/" component={App}/>
+      <Route path="/about" component={About}/>
+    </div>
+  </BrowserRouter>
+  , document.getElementById('root')
 );
 
 registerServiceWorker();
