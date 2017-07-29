@@ -1,0 +1,55 @@
+body{
+  font-family:sans-serif;
+  background-image:url("./img/purty_wood0/purty_wood.png")
+}
+header,content,footer,nav, article,aside,.logo,.img,h1,.reviews,p,table,td,th{
+  /*border:2px solid gray;*/
+  padding:2px;
+  margin: 4px;
+  background-color: rgba(200,200,200,.5);
+}
+nav li{
+  display:inline-block;
+  padding:4px;
+  /*style:default*/
+  color:black;
+  background-color: rgba(200,200,200,.5);
+}
+aside{
+  width:30%;
+  float:left;
+  padding:6px;
+}
+aside li{
+  border-bottom:2px solid black;
+  list-style-type:none;
+  padding:6px;
+  margin-left:0;
+}
+content{
+  width:62.5%;
+  float:right;
+}
+footer{
+  clear:both;
+}
+.currentPage{
+  background-color:rgba(255,255,255,.5);
+}
+.logo{
+  width:20%;
+  height:20%;
+}
+img{float:center;}
+h1{}
+.logo,h1,header h2{display:inline-block;}
+.img{
+  width:35%;
+  height:25%;
+}
+.img,.desc{display:inline-block;}
+.reviews{
+  height:50%;
+  overflow:auto;
+}
+.desc{height:4%}

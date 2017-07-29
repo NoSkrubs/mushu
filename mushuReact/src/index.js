@@ -7,14 +7,16 @@ import registerServiceWorker from './registerServiceWorker';
 //Modules
 import App from './App';
 import About from './About';
+import Mushu from './mushu';
 
 //CSS
 import './index.css';
+import './mushu.css';
 
 ReactDOM.render(
   <BrowserRouter>
     <div>
-      <Route exact path="/" component={App}/>
+      <Route exact path="/" component={Mushu}/>
       <Route path="/about" component={About}/>
     </div>
   </BrowserRouter>
